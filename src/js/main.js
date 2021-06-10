@@ -10,6 +10,7 @@ import InfoService from "./services/InfoService";
 import { getSubDir } from "./utils";
 import ConfigService from "./services/ConfigService";
 import { v4 as uuidv4 } from "uuid";
+import Peer from "peerjs";
 
 const pdfjsLib = require("pdfjs-dist");
 
@@ -37,6 +38,9 @@ if (urlParams.get("whiteboardid") !== whiteboardId) {
 const myUsername = urlParams.get("username") || "unknown" + (Math.random() + "").substring(2, 6);
 const accessToken = urlParams.get("accesstoken") || "";
 const copyfromwid = urlParams.get("copyfromwid") || "";
+const peers = {};
+
+let recorder;
 
 // Custom Html Title
 const title = urlParams.get("title");
@@ -46,9 +50,38 @@ if (title) {
 
 const subdir = getSubDir();
 let signaling_socket;
+let peer;
+let chunks = [];
+
+function addVideoStream(video, stream) {
+    video.srcObject = stream;
+    video.addEventListener("loadedmetadata", () => {
+        video.play();
+    });
+    document.querySelector("#video-grid").append(video);
+}
+
+function connectToNewUser(userId, stream) {
+    console.log("connecting to user - making a call....");
+    const call = peer.call(userId, stream);
+    console.log(call);
+    const newVideo = document.createElement("video");
+    call.on("stream", (newVideoStream) => {
+        console.log("adding the new video stream from new call", newVideoStream);
+        addVideoStream(newVideo, newVideoStream);
+    });
+    call.on("close", () => {
+        newVideo.remove();
+    });
+    peers[userId] = call;
+}
 
 function main() {
     signaling_socket = io("", { path: subdir + "/ws-api" }); // Connect even if we are in a subdir behind a reverse proxy
+    peer = new Peer(undefined, {
+        host: "/",
+        port: "8080",
+    });
 
     signaling_socket.on("connect", function () {
         console.log("Websocket connected!");
@@ -80,12 +113,73 @@ function main() {
                 showBasicAlert("Access denied! Wrong accessToken!");
             }
         });
+    });
 
+    peer.on("open", (id) => {
+        console.log("peer connected: ", id);
         signaling_socket.emit("joinWhiteboard", {
             wid: whiteboardId,
             at: accessToken,
+            username: id,
             windowWidthHeight: { w: $(window).width(), h: $(window).height() },
         });
+    });
+
+    navigator.mediaDevices
+        .getUserMedia({
+            video: true,
+            audio: true,
+        })
+        .then((stream) => {
+            console.log("Got own media devices!");
+            recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+            recorder.ondataavailable = function (e) {
+                console.log(e, e.data);
+                chunks.push(e.data);
+            };
+            const recordButton = document.querySelector("#recordBtn");
+            recordButton.addEventListener("click", (e) => {
+                if (recorder.state === "inactive") {
+                    recordButton.style.color = "red";
+                    recorder.start(1000);
+                } else {
+                    recordButton.style.color = "black";
+                    recorder.stop();
+                    let blob = new Blob(chunks, {
+                        type: "audio/webm",
+                    });
+                    let url = URL.createObjectURL(blob);
+                    let a = document.createElement("a");
+                    document.body.appendChild(a);
+                    a.style = "display: none";
+                    a.href = url;
+                    a.download = "test.webm";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            });
+            const myVideo = document.createElement("video");
+            myVideo.muted = true;
+            addVideoStream(myVideo, stream);
+
+            peer.on("call", (call) => {
+                console.log("Got a call!", call);
+                call.answer(stream);
+                const newVideo = document.createElement("video");
+                call.on("stream", (newVideoStream) => {
+                    addVideoStream(newVideo, newVideoStream);
+                });
+            });
+
+            signaling_socket.on("user-connected", (userId) => {
+                console.log("user connected!");
+                connectToNewUser(userId, stream);
+            });
+        });
+
+    signaling_socket.on("user-disconnected", (userId) => {
+        console.log("user disconnected!");
+        if (peers[userId]) peers[userId].close();
     });
 }
 

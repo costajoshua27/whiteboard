@@ -21,12 +21,21 @@ function startBackendServer(port) {
     var app = express();
     app.use(express.static(path.join(__dirname, "..", "dist")));
     app.use("/uploads", express.static(path.join(__dirname, "..", "public", "uploads")));
+
     var server = require("http").Server(app);
+    const { ExpressPeerServer } = require("peer");
+    const peerServer = ExpressPeerServer(server, {
+        debug: true,
+        path: "/",
+    });
+    app.use("/", peerServer);
+
     server.listen(port);
+
     var io = require("socket.io")(server, { path: "/ws-api" });
     WhiteboardInfoBackendService.start(io);
 
-    console.log("Webserver & socketserver running on port:" + port);
+    console.log("Webserver, peerserver & socketserver running on port haha!:" + port);
 
     const { accessToken, enableWebdav } = config.backend;
 
@@ -300,10 +309,6 @@ function startBackendServer(port) {
 
     io.on("connection", function (socket) {
         let whiteboardId = null;
-        socket.on("disconnect", function () {
-            WhiteboardInfoBackendService.leave(socket.id, whiteboardId);
-            socket.compress(false).broadcast.to(whiteboardId).emit("refreshUserBadges", null); //Removes old user Badges
-        });
 
         socket.on("drawToWhiteboard", function (content) {
             if (!whiteboardId || ReadOnlyBackendService.isReadOnly(whiteboardId)) return;
@@ -339,11 +344,20 @@ function startBackendServer(port) {
                 });
 
                 socket.join(whiteboardId); //Joins room name=wid
+                console.log(content["username"]);
+                socket.to(whiteboardId).broadcast.emit("user-connected", content["username"]);
                 const screenResolution = content["windowWidthHeight"];
                 WhiteboardInfoBackendService.join(socket.id, whiteboardId, screenResolution);
             } else {
                 socket.emit("wrongAccessToken", true);
             }
+
+            socket.on("disconnect", function () {
+                console.log("client disconnected!");
+                WhiteboardInfoBackendService.leave(socket.id, whiteboardId);
+                socket.compress(false).broadcast.to(whiteboardId).emit("refreshUserBadges", null); //Removes old user Badges
+                socket.to(whiteboardId).broadcast.emit("user-disconnected", content["username"]);
+            });
         });
 
         socket.on("updateScreenResolution", function (content) {

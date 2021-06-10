@@ -7,11 +7,12 @@
     </head>
 
     <body>
+        <div id="video-grid"></div>
         <!---Whiteboard container -!-->
         <div id="whiteboardContainer"></div>
 
         <!---Toolbar -!-->
-        <div id="toolbar" style="position: absolute; top: 10px; left: 10px">
+        <div id="toolbar">
             <div class="btn-group">
                 <button
                     id="whiteboardLockBtn"
@@ -163,7 +164,7 @@
                 </button>
             </div>
 
-            <div class="btn-group whiteboard-edit-group">
+            <!-- <div class="btn-group whiteboard-edit-group">
                 <button id="addImgToCanvasBtn" title="Upload Image to whiteboard" type="button">
                     <i class="fas fa-image"></i>
                     <i
@@ -198,9 +199,8 @@
                 </button>
 
                 <input style="display: none" id="myFile" type="file" />
-            </div>
-
-            <div class="btn-group">
+            </div> -->
+            <!-- <div class="btn-group">
                 <button id="saveAsImageBtn" title="Save whiteboard as image" type="button">
                     <i class="fas fa-image"></i>
                     <i
@@ -250,7 +250,9 @@
                         class="fas fa-save"
                     ></i>
                 </button>
+            </div> -->
 
+            <div class="btn-group">
                 <button id="shareWhiteboardBtn" title="share whiteboard" type="button">
                     <i class="fas fa-share-square"></i>
                 </button>
@@ -277,6 +279,38 @@
                         style="position: relative; left: -5px; display: none"
                         class="fas fa-angle-right"
                     ></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- IDB toolbars -->
+        <div id="idb-toolbar-left">
+            <div class="btn-group">
+                <button id="clip30Btn" title="Clip the previous 30 seconds" type="button">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button id="clip60Btn" title="Clip the previous 60 seconds" type="button">
+                    <i class="fas fa-fast-backward"></i>
+                </button>
+                <button id="holdClipBtn" title="Hold to record" type="button">
+                    <i class="fas fa-circle"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="idb-toolbar-right">
+            <div class="btn-group">
+                <!-- <button id="clip30Btn" title="Clip the previous 30 seconds" type="button">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button id="clip60Btn" title="Clip the previous 60 seconds" type="button">
+                    <i class="fas fa-fast-backward"></i>
+                </button>
+                <button id="holdClipBtn" title="Hold to record" type="button">
+                    <i class="fas fa-circle"></i>
+                </button> -->
+                <button id="recordBtn" title="Hold to record" type="button">
+                    <i class="fas fa-circle"></i>
                 </button>
             </div>
         </div>

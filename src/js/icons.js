@@ -21,6 +21,9 @@ import {
     faInfoCircle,
     faGlobe,
     faStickyNote,
+    faStepBackward,
+    faFastBackward,
+    faCircle as faCircleSolid,
 } from "@fortawesome/free-solid-svg-icons";
 import {
     faSquare,
@@ -56,7 +59,10 @@ library.add(
     faLockOpen,
     faInfoCircle,
     faGlobe,
-    faStickyNote
+    faStickyNote,
+    faStepBackward,
+    faFastBackward,
+    faCircleSolid
 );
 
 dom.i2svg();

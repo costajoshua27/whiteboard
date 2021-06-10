@@ -39,6 +39,8 @@
     "jquery-ui-rotatable": "^1.1.0",
     "js-yaml": "3.13.1",
     "jsdom": "^14.0.0",
+    "peer": "^0.6.1",
+    "peerjs": "^1.3.2",
     "socket.io": "2.*",
     "uuid": "^8.1.0",
     "webdav": "^4.3.0"
