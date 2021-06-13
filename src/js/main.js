@@ -10,6 +10,8 @@ import InfoService from "./services/InfoService";
 import { getSubDir } from "./utils";
 import ConfigService from "./services/ConfigService";
 import { v4 as uuidv4 } from "uuid";
+import RecordingManager from "./recordingManager";
+
 import Peer from "peerjs";
 
 const pdfjsLib = require("pdfjs-dist");
@@ -40,8 +42,6 @@ const accessToken = urlParams.get("accesstoken") || "";
 const copyfromwid = urlParams.get("copyfromwid") || "";
 const peers = {};
 
-let recorder;
-
 // Custom Html Title
 const title = urlParams.get("title");
 if (title) {
@@ -51,14 +51,21 @@ if (title) {
 const subdir = getSubDir();
 let signaling_socket;
 let peer;
-let chunks = [];
 
-function addVideoStream(video, stream) {
+const recordingManager = new RecordingManager();
+
+function addVideoStream(video, stream, userId) {
+    // Setup the video
     video.srcObject = stream;
     video.addEventListener("loadedmetadata", () => {
         video.play();
     });
+
+    // Add the video to the grid
     document.querySelector("#video-grid").append(video);
+
+    // Add the new stream to the recording
+    recordingManager.addStream(userId, stream);
 }
 
 function connectToNewUser(userId, stream) {
@@ -68,7 +75,7 @@ function connectToNewUser(userId, stream) {
     const newVideo = document.createElement("video");
     call.on("stream", (newVideoStream) => {
         console.log("adding the new video stream from new call", newVideoStream);
-        addVideoStream(newVideo, newVideoStream);
+        addVideoStream(newVideo, newVideoStream, userId);
     });
     call.on("close", () => {
         newVideo.remove();
@@ -132,42 +139,20 @@ function main() {
         })
         .then((stream) => {
             console.log("Got own media devices!");
-            recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-            recorder.ondataavailable = function (e) {
-                console.log(e, e.data);
-                chunks.push(e.data);
-            };
             const recordButton = document.querySelector("#recordBtn");
             recordButton.addEventListener("click", (e) => {
-                if (recorder.state === "inactive") {
-                    recordButton.style.color = "red";
-                    recorder.start(1000);
-                } else {
-                    recordButton.style.color = "black";
-                    recorder.stop();
-                    let blob = new Blob(chunks, {
-                        type: "audio/webm",
-                    });
-                    let url = URL.createObjectURL(blob);
-                    let a = document.createElement("a");
-                    document.body.appendChild(a);
-                    a.style = "display: none";
-                    a.href = url;
-                    a.download = "test.webm";
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                }
+                recordingManager.toggleRecord(e);
             });
             const myVideo = document.createElement("video");
             myVideo.muted = true;
-            addVideoStream(myVideo, stream);
+            addVideoStream(myVideo, stream, "self");
 
             peer.on("call", (call) => {
                 console.log("Got a call!", call);
                 call.answer(stream);
                 const newVideo = document.createElement("video");
                 call.on("stream", (newVideoStream) => {
-                    addVideoStream(newVideo, newVideoStream);
+                    addVideoStream(newVideo, newVideoStream, call.peer);
                 });
             });
 
@@ -180,6 +165,7 @@ function main() {
     signaling_socket.on("user-disconnected", (userId) => {
         console.log("user disconnected!");
         if (peers[userId]) peers[userId].close();
+        recordingManager.removeStream(userId);
     });
 }
 
