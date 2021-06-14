@@ -1,7 +1,4 @@
 class RecordingManager {
-    // Add chunks every 1000 ms
-    static RECORDING_FREQ = 1000;
-
     constructor() {
         this.recorder = null;
         this.streams = {};
@@ -12,8 +9,7 @@ class RecordingManager {
         this.streams[k] = stream;
         if (this.recorder) {
             this.setupRecorder();
-            console.log(this.RECORDING_FREQ);
-            this.recorder.start(this.RECORDING_FREQ);
+            this.recorder.start(1000);
         }
     }
 
@@ -21,7 +17,7 @@ class RecordingManager {
         delete this.streams[k];
         if (this.recorder) {
             this.setupRecorder();
-            this.recorder.start(this.RECORDING_FREQ);
+            this.recorder.start(1000);
         }
     }
 
@@ -47,14 +43,18 @@ class RecordingManager {
             this.recorder.stop();
         }
 
-        const cont = new AudioContext();
-        const dest = cont.createMediaStreamDestination();
-        const streamsToAdd = Object.values(this.streams).map((stream) =>
-            cont.createMediaStreamSource(stream)
-        );
-        streamsToAdd.forEach((stream) => stream.connect(dest));
+        // const cont = new AudioContext();
+        // const streamsToAdd = Object.values(this.streams).map(stream =>
+        //     cont.createMediaStreamSource(stream)
+        // );
+        // const dest = cont.createMediaStreamDestination();
+        // streamsToAdd.forEach(stream => stream.connect(dest));
 
-        this.recorder = new MediaRecorder(dest.stream, { mimeType: "audio/webm" });
+        const tracks = [];
+        Object.values(this.streams).forEach((stream) => tracks.push(...stream.getAudioTracks()));
+        const newStream = new MediaStream([...tracks]);
+
+        this.recorder = new MediaRecorder(newStream, { mimeType: "audio/webm" });
         const chunksRef = this.chunks;
         this.recorder.ondataavailable = function (e) {
             console.log(e.data);
@@ -66,7 +66,9 @@ class RecordingManager {
         if (!this.recorder) {
             e.target.style.color = "red";
             this.setupRecorder();
-            this.recorder.start(this.RECORDING_FREQ);
+            console.log(this.recorder);
+            this.recorder.start(1000);
+            console.log(this.recorder);
         } else {
             e.target.style.color = "black";
             this.recorder.stop();
