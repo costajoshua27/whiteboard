@@ -42,6 +42,43 @@ const accessToken = urlParams.get("accesstoken") || "";
 const copyfromwid = urlParams.get("copyfromwid") || "";
 const peers = {};
 
+// Setup transcription
+let SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
+let SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
+let SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+
+let colors = ["aqua", "azure", "beige", "bisque", "black", "blue", "brown", "chocolate", "coral"];
+let grammar = "#JSGF V1.0; grammar colors; public <color> = " + colors.join(" | ") + " ;";
+
+let recognition = new SpeechRecognition();
+let speechRecognitionList = new SpeechGrammarList();
+
+speechRecognitionList.addFromString(grammar, 1);
+
+recognition.grammars = speechRecognitionList;
+recognition.continuous = false;
+recognition.lang = "en-US";
+recognition.interimResults = false;
+recognition.maxAlternatives = 1;
+
+recognition.onresult = function (event) {
+    let color = event.results[0][0].transcript;
+    console.log(color);
+    console.log("Confidence: " + event.results[0][0].confidence);
+};
+
+recognition.onspeechend = function () {
+    recognition.stop();
+};
+
+recognition.onnomatch = function (event) {
+    console.log("I did not recognize that color");
+};
+
+recognition.onerror = function (event) {
+    console.log(event.error);
+};
+
 // Custom Html Title
 const title = urlParams.get("title");
 if (title) {
@@ -142,6 +179,7 @@ function main() {
             const recordButton = document.querySelector("#recordBtn");
             recordButton.addEventListener("click", (e) => {
                 recordingManager.toggleRecord(e);
+                recognition.start();
             });
             const myVideo = document.createElement("video");
             myVideo.muted = true;
