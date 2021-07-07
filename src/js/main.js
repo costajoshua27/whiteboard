@@ -44,26 +44,27 @@ const peers = {};
 
 // Setup transcription
 let SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
-let SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
-let SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
+let transcript = '';
+// let SpeechGrammarList = SpeechGrammarList || webkitSpeechGrammarList;
+// let SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
 
-let colors = ["aqua", "azure", "beige", "bisque", "black", "blue", "brown", "chocolate", "coral"];
-let grammar = "#JSGF V1.0; grammar colors; public <color> = " + colors.join(" | ") + " ;";
+// let colors = ["aqua", "azure", "beige", "bisque", "black", "blue", "brown", "chocolate", "coral"];
+// let grammar = "#JSGF V1.0; grammar colors; public <color> = " + colors.join(" | ") + " ;";
 
 let recognition = new SpeechRecognition();
-let speechRecognitionList = new SpeechGrammarList();
+// let speechRecognitionList = new SpeechGrammarList();
 
-speechRecognitionList.addFromString(grammar, 1);
+// speechRecognitionList.addFromString(grammar, 1);
 
-recognition.grammars = speechRecognitionList;
-recognition.continuous = false;
+// recognition.grammars = speechRecognitionList;
+recognition.continuous = true;
 recognition.lang = "en-US";
 recognition.interimResults = false;
-recognition.maxAlternatives = 1;
+// recognition.maxAlternatives = 1;
 
 recognition.onresult = function (event) {
-    let color = event.results[0][0].transcript;
-    console.log(color);
+    transcript += event.results[0][0].transcript;
+    $('#transcript-text').text(transcript);
     console.log("Confidence: " + event.results[0][0].confidence);
 };
 
