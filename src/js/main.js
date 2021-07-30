@@ -62,15 +62,10 @@ recognition.lang = "en-US";
 recognition.interimResults = false;
 // recognition.maxAlternatives = 1;
 
-recognition.onresult = function (event) {
-    transcript += event.results[0][0].transcript;
-    $('#transcript-text').text(transcript);
-    console.log("Confidence: " + event.results[0][0].confidence);
-};
 
-recognition.onspeechend = function () {
-    recognition.stop();
-};
+// recognition.onspeechend = function () {
+//     recognition.stop();
+// };
 
 recognition.onnomatch = function (event) {
     console.log("I did not recognize that color");
@@ -128,6 +123,16 @@ function main() {
         port: "8080",
     });
 
+    recognition.onresult = function (event) {
+        let newText = event.results[event.results.length - 1][0].transcript;
+        transcript += ' ' + newText;
+        $('#transcript-text').text(transcript);
+        signaling_socket.emit("transcription", {
+            whiteboardId,
+            text: newText
+        });
+    };
+
     signaling_socket.on("connect", function () {
         console.log("Websocket connected!");
 
@@ -158,6 +163,12 @@ function main() {
                 showBasicAlert("Access denied! Wrong accessToken!");
             }
         });
+
+        signaling_socket.on("transcription", function (text) {
+            console.log('received text!: ' + text);
+            transcript += ' ' + text;
+            $('#transcript-text').text(transcript); 
+        });
     });
 
     peer.on("open", (id) => {
@@ -179,8 +190,7 @@ function main() {
             console.log("Got own media devices!");
             const recordButton = document.querySelector("#recordBtn");
             recordButton.addEventListener("click", (e) => {
-                recordingManager.toggleRecord(e);
-                recognition.start();
+                recordingManager.toggleRecord(e, recognition);
             });
             const myVideo = document.createElement("video");
             myVideo.muted = true;

@@ -22,7 +22,7 @@ class RecordingManager {
     }
 
     download() {
-        console.log("downloading these chunks...", this.chunks);
+        // console.log("downloading these chunks...", this.chunks);
         let blob = new Blob(this.chunks, {
             type: "audio/webm",
         });
@@ -62,18 +62,20 @@ class RecordingManager {
         };
     }
 
-    toggleRecord(e) {
+    toggleRecord(e, recognition) {
         if (!this.recorder) {
             e.target.style.color = "red";
             this.setupRecorder();
             console.log(this.recorder);
             this.recorder.start(1000);
             console.log(this.recorder);
+            recognition.start(); 
         } else {
             e.target.style.color = "black";
             this.recorder.stop();
             this.recorder = null;
             this.download();
+            recognition.abort();
         }
     }
 }

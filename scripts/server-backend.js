@@ -371,6 +371,10 @@ function startBackendServer(port) {
                 );
             }
         });
+
+        socket.on("transcription", function(content) {
+            socket.to(content["whiteboardId"]).broadcast.emit("transcription", content["text"]);
+        });
     });
 
     //Prevent cross site scripting (xss)
